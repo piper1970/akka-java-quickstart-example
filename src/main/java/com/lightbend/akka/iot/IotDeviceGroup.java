@@ -1,4 +1,4 @@
-package com.lightbend.akka.sample;
+package com.lightbend.akka.iot;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -55,7 +55,7 @@ public class IotDeviceGroup extends AbstractActor {
         final long requestId;
         final Map<String, TemperatureReading> temperatures;
 
-        public RespondAllTemperatures(long requestId, Map<String, TemperatureReading> temperatures) {
+        RespondAllTemperatures(long requestId, Map<String, TemperatureReading> temperatures) {
             this.requestId = requestId;
             this.temperatures = temperatures;
         }
@@ -65,7 +65,7 @@ public class IotDeviceGroup extends AbstractActor {
     }
 
     public static final class Temperature implements TemperatureReading {
-        public final double value;
+        final double value;
 
         public Temperature(double value) {
             this.value = value;

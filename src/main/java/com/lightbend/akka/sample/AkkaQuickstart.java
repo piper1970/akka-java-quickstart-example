@@ -7,11 +7,11 @@ import com.lightbend.akka.sample.Greeter.WhoToGreet;
 
 import java.io.IOException;
 
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public class AkkaQuickstart {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException  {
         final ActorSystem system = ActorSystem.create("helloakka");
         try {
-            //#create-actors
             final ActorRef printerActor =
                     system.actorOf(Printer.props(), "printerActor");
             final ActorRef howdyGreeter =
@@ -20,9 +20,7 @@ public class AkkaQuickstart {
                     system.actorOf(Greeter.props("Hello", printerActor), "helloGreeter");
             final ActorRef goodDayGreeter =
                     system.actorOf(Greeter.props("Good day", printerActor), "goodDayGreeter");
-            //#create-actors
 
-            //#main-send-messages
             howdyGreeter.tell(new WhoToGreet("Akka"), ActorRef.noSender());
             howdyGreeter.tell(new Greet(), ActorRef.noSender());
 
@@ -34,11 +32,9 @@ public class AkkaQuickstart {
 
             goodDayGreeter.tell(new WhoToGreet("Play"), ActorRef.noSender());
             goodDayGreeter.tell(new Greet(), ActorRef.noSender());
-            //#main-send-messages
 
             System.out.println(">>> Press ENTER to exit <<<");
             System.in.read();
-        } catch (IOException ioe) {
         } finally {
             system.terminate();
         }

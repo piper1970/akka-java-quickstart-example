@@ -1,4 +1,4 @@
-package com.lightbend.akka.sample;
+package com.lightbend.akka.iot;
 
 import akka.actor.AbstractActor;
 import akka.actor.Props;
@@ -50,16 +50,21 @@ public class IotDevice extends AbstractActor {
     }
 
     public static final class RespondTemperature {
-        final long requestId;
-        final Optional<Double> value;
+        public final long requestId;
+        private final Double value;
 
-        RespondTemperature(long requestId, Optional<Double> value) {
+        RespondTemperature(long requestId, Double value) {
             this.requestId = requestId;
             this.value = value;
         }
+
+        @SuppressWarnings("unused")
+        Optional<Double> getValue() {
+            return Optional.ofNullable(value);
+        }
     }
 
-    Optional<Double> lastTemperatureReading = Optional.empty();
+    private Double lastTemperatureReading = null;
 
     @Override
     public void preStart() {
@@ -80,7 +85,7 @@ public class IotDevice extends AbstractActor {
                                 .tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf()))
                 .match(RecordTemperature.class, r -> {
                     log.info("Recorded temperature reading {} with {}", r.value, r.requestId);
-                    lastTemperatureReading = Optional.of(r.value);
+                    lastTemperatureReading = r.value;
                     getSender().tell(new TemperatureRecorded(r.requestId), getSelf());
                 })
                 .build();

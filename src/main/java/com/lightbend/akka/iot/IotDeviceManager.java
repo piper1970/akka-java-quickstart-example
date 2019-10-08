@@ -1,4 +1,4 @@
-package com.lightbend.akka.sample;
+package com.lightbend.akka.iot;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -13,10 +13,21 @@ import java.util.Optional;
 
 public class IotDeviceManager extends AbstractActor {
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+    private final String supervisorId;
+    private final String managerId;
+    private final Map<String, ActorRef> groupIdToActor = new HashMap<>();
+    private final Map<ActorRef, String> actorToGroupId = new HashMap<>();
 
-    public static Props props() {
-        return Props.create(IotDeviceManager.class, IotDeviceManager::new);
+    private IotDeviceManager(String supervisorId, String managerId) {
+        this.managerId = managerId;
+        this.supervisorId = supervisorId;
     }
+
+    public static Props props(String supervisorId, String managerId) {
+        return Props.create(IotDeviceManager.class, () -> new IotDeviceManager(supervisorId, managerId));
+    }
+
+    // TODO: need to add getGroupList functionality, like in IotDeviceGroup getDeviceList
 
     public static final class RequestTrackDevice {
         final String groupId;
@@ -30,9 +41,6 @@ public class IotDeviceManager extends AbstractActor {
 
     public static final class DeviceRegistered {
     }
-
-    private final Map<String, ActorRef> groupIdToActor = new HashMap<>();
-    private final Map<ActorRef, String> actorToGroupId = new HashMap<>();
 
     @Override
     public void preStart() {
@@ -48,18 +56,28 @@ public class IotDeviceManager extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(RequestTrackDevice.class, this::onTrackDevice)
+                .match(IotSupervisor.TrackDeviceManager.class, this::onTrackDeviceManager)
                 .match(Terminated.class, this::onTerminated)
                 .build();
     }
 
+    private void onTrackDeviceManager(IotSupervisor.TrackDeviceManager trackDeviceManager) {
+        if(managerId.equals(trackDeviceManager.deviceManagerId)){
+            getSender().tell(new IotSupervisor.DeviceManagerRegistered(trackDeviceManager.requestId), getSelf());
+        }else{
+            log.warning("Ignoring TrackDeviceManager call for {}.  This DeviceManager handles calls for {}",
+                    trackDeviceManager.deviceManagerId, managerId);
+        }
+    }
+
     private void onTrackDevice(RequestTrackDevice trackMsg) {
         String groupId = trackMsg.groupId;
-        Optional.ofNullable(groupIdToActor.getOrDefault(groupId, null))
+        Optional.ofNullable(groupIdToActor.get(groupId))
                 .ifPresentOrElse(ref -> ref.forward(trackMsg, getContext()), () -> {
                     log.info("Creating device group actor for {}", groupId);
-                    ActorRef groupActor = this.getContext().actorOf(IotDeviceGroup.props(groupId), "iotGroup-" + groupId);
+                    ActorRef groupActor = getContext().actorOf(IotDeviceGroup.props(groupId), "iotGroup-" + groupId);
                     getContext().watch(groupActor);
-                    groupActor.forward(trackMsg, this.getContext());
+                    groupActor.forward(trackMsg, getContext());
                     groupIdToActor.put(groupId, groupActor);
                     actorToGroupId.put(groupActor, groupId);
                 });

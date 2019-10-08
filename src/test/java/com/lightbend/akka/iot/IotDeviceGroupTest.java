@@ -1,4 +1,4 @@
-package com.lightbend.akka.sample;
+package com.lightbend.akka.iot;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;

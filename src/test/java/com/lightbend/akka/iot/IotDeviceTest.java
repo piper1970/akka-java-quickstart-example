@@ -1,4 +1,4 @@
-package com.lightbend.akka.sample;
+package com.lightbend.akka.iot;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -42,7 +42,7 @@ public class IotDeviceTest {
         deviceActor.tell(new IotDevice.ReadTemperature(42L), probe.getRef());
         IotDevice.RespondTemperature response = probe.expectMsgClass(IotDevice.RespondTemperature.class);
         assertEquals(42L, response.requestId);
-        assertEquals(Optional.empty(), response.value);
+        assertEquals(Optional.empty(), response.getValue());
     }
 
     @Test
@@ -54,7 +54,7 @@ public class IotDeviceTest {
         deviceActor.tell(new IotDevice.ReadTemperature(2L), probe.getRef());
         IotDevice.RespondTemperature response1 = probe.expectMsgClass(IotDevice.RespondTemperature.class);
         assertEquals(2L, response1.requestId);
-        assertEquals(Optional.of(24.0), response1.value);
+        assertEquals(Optional.of(24.0), response1.getValue());
 
         deviceActor.tell(new IotDevice.RecordTemperature(3L, 55.0), probe.getRef());
         assertEquals(3L, probe.expectMsgClass(IotDevice.TemperatureRecorded.class).requestId);
@@ -62,7 +62,7 @@ public class IotDeviceTest {
         deviceActor.tell(new IotDevice.ReadTemperature(4L), probe.getRef());
         IotDevice.RespondTemperature response2 = probe.expectMsgClass(IotDevice.RespondTemperature.class);
         assertEquals(4L, response2.requestId);
-        assertEquals(Optional.of(55.0), response2.value);
+        assertEquals(Optional.of(55.0), response2.getValue());
     }
 
     @Test

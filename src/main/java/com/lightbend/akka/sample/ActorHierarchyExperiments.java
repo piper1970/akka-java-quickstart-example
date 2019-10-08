@@ -111,7 +111,7 @@ class SupervisedActor extends AbstractActor {
     }
 }
 
-@SuppressWarnings("all")
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public class ActorHierarchyExperiments {
     public static void main(String[] args) throws IOException {
         ActorSystem system = ActorSystem.create("testSystem");

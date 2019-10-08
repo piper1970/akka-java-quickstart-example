@@ -1,4 +1,4 @@
-package com.lightbend.akka.sample;
+package com.lightbend.akka.iot;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -13,7 +13,6 @@ import scala.concurrent.duration.FiniteDuration;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -57,8 +56,8 @@ public class IotDeviceGroupQueryTest {
         assertEquals(0L, device1.expectMsgClass(IotDevice.ReadTemperature.class).requestId);
         assertEquals(0L, device2.expectMsgClass(IotDevice.ReadTemperature.class).requestId);
 
-        queryActor.tell(new IotDevice.RespondTemperature(0L, Optional.ofNullable(1.0)), device1.getRef());
-        queryActor.tell(new IotDevice.RespondTemperature(0L, Optional.ofNullable(2.0)), device2.getRef());
+        queryActor.tell(new IotDevice.RespondTemperature(0L, 1.0), device1.getRef());
+        queryActor.tell(new IotDevice.RespondTemperature(0L, 2.0), device2.getRef());
 
         IotDeviceGroup.RespondAllTemperatures response =
                 requester.expectMsgClass(IotDeviceGroup.RespondAllTemperatures.class);
@@ -77,8 +76,8 @@ public class IotDeviceGroupQueryTest {
         assertEquals(0L, device1.expectMsgClass(IotDevice.ReadTemperature.class).requestId);
         assertEquals(0L, device2.expectMsgClass(IotDevice.ReadTemperature.class).requestId);
 
-        queryActor.tell(new IotDevice.RespondTemperature(0L, Optional.empty()), device1.getRef());
-        queryActor.tell(new IotDevice.RespondTemperature(0L, Optional.of(2.0)), device2.getRef());
+        queryActor.tell(new IotDevice.RespondTemperature(0L, null), device1.getRef());
+        queryActor.tell(new IotDevice.RespondTemperature(0L, 2.0), device2.getRef());
 
         IotDeviceGroup.RespondAllTemperatures response =
                 requester.expectMsgClass(IotDeviceGroup.RespondAllTemperatures.class);
@@ -97,7 +96,7 @@ public class IotDeviceGroupQueryTest {
         assertEquals(0L, device1.expectMsgClass(IotDevice.ReadTemperature.class).requestId);
         assertEquals(0L, device2.expectMsgClass(IotDevice.ReadTemperature.class).requestId);
 
-        queryActor.tell(new IotDevice.RespondTemperature(0L, Optional.of(1.0)), device1.getRef());
+        queryActor.tell(new IotDevice.RespondTemperature(0L, 1.0), device1.getRef());
         device2.getRef().tell(PoisonPill.getInstance(), ActorRef.noSender());
 
         IotDeviceGroup.RespondAllTemperatures response =
@@ -117,7 +116,7 @@ public class IotDeviceGroupQueryTest {
         assertEquals(0L, device1.expectMsgClass(IotDevice.ReadTemperature.class).requestId);
         assertEquals(0L, device2.expectMsgClass(IotDevice.ReadTemperature.class).requestId);
 
-        queryActor.tell(new IotDevice.RespondTemperature(0L, Optional.of(1.0)), device1.getRef());
+        queryActor.tell(new IotDevice.RespondTemperature(0L, 1.0), device1.getRef());
 
         IotDeviceGroup.RespondAllTemperatures response = requester.expectMsgClass(Duration.ofSeconds(5),
                 IotDeviceGroup.RespondAllTemperatures.class);

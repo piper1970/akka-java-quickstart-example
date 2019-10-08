@@ -1,4 +1,4 @@
-package com.lightbend.akka.sample;
+package com.lightbend.akka.iot;
 
 import akka.actor.*;
 import scala.concurrent.duration.FiniteDuration;
@@ -74,6 +74,7 @@ public class IotDeviceGroupQuery extends AbstractActor {
                 repliesSoFar);
     }
 
+    @SuppressWarnings("unused")
     private void onCollectionTimeout(CollectionTimeout t,
                                      Map<String, IotDeviceGroup.TemperatureReading> repliesSoFar,
                                      Set<ActorRef> stillWaiting) {
@@ -90,7 +91,7 @@ public class IotDeviceGroupQuery extends AbstractActor {
                                       Map<String, IotDeviceGroup.TemperatureReading> repliesSoFar,
                                       Set<ActorRef> stillWaiting) {
         ActorRef deviceActor = getSender();
-        IotDeviceGroup.TemperatureReading reading = r.value.map(v -> (IotDeviceGroup.TemperatureReading) new IotDeviceGroup.Temperature(v))
+        IotDeviceGroup.TemperatureReading reading = r.getValue().map(v -> (IotDeviceGroup.TemperatureReading) new IotDeviceGroup.Temperature(v))
                 .orElse(IotDeviceGroup.TemperatureNotAvailable.INSTANCE);
         receivedResponse(deviceActor, reading, stillWaiting, repliesSoFar);
 
