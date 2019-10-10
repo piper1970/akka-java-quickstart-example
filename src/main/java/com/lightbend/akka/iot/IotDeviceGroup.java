@@ -157,7 +157,7 @@ public class IotDeviceGroup extends AbstractActor {
 
     private void onTerminated(Terminated t) {
         ActorRef ref = t.getActor();
-        Optional.ofNullable(actorToDeviceId.getOrDefault(ref, null))
+        Optional.ofNullable(actorToDeviceId.get(ref))
                 .ifPresent(deviceId -> {
                     log.info("Iot Device actor for {} has been terminated", deviceId);
                     actorToDeviceId.remove(ref);

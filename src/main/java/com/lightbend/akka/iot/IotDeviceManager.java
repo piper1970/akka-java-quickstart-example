@@ -7,27 +7,42 @@ import akka.actor.Terminated;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class IotDeviceManager extends AbstractActor {
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
-    private final String supervisorId;
     private final String managerId;
     private final Map<String, ActorRef> groupIdToActor = new HashMap<>();
     private final Map<ActorRef, String> actorToGroupId = new HashMap<>();
 
-    private IotDeviceManager(String supervisorId, String managerId) {
+    private IotDeviceManager(String managerId) {
         this.managerId = managerId;
-        this.supervisorId = supervisorId;
     }
 
-    public static Props props(String supervisorId, String managerId) {
-        return Props.create(IotDeviceManager.class, () -> new IotDeviceManager(supervisorId, managerId));
+    public static Props props(String managerId) {
+        return Props.create(IotDeviceManager.class, () -> new IotDeviceManager(managerId));
     }
 
     // TODO: need to add getGroupList functionality, like in IotDeviceGroup getDeviceList
+    public static final class RequestGroupList {
+        final long requestId;
+        final String deviceManagerId;
+
+        public RequestGroupList(long requestId, String deviceManagerId) {
+            this.requestId = requestId;
+            this.deviceManagerId = deviceManagerId;
+        }
+    }
+
+    public static final class ReplyGroupList {
+        final long requestId;
+        final Set<String> groupList;
+
+        public ReplyGroupList(long requestId, Set<String> groupList) {
+            this.requestId = requestId;
+            this.groupList = groupList;
+        }
+    }
 
     public static final class RequestTrackDevice {
         final String groupId;
@@ -58,7 +73,17 @@ public class IotDeviceManager extends AbstractActor {
                 .match(RequestTrackDevice.class, this::onTrackDevice)
                 .match(IotSupervisor.TrackDeviceManager.class, this::onTrackDeviceManager)
                 .match(Terminated.class, this::onTerminated)
+                .match(RequestGroupList.class, this::onRequestGroupList)
                 .build();
+    }
+
+    private void onRequestGroupList(RequestGroupList requestGroupList) {
+        if(managerId.equals(requestGroupList.deviceManagerId)){
+            getSender().tell(new ReplyGroupList(requestGroupList.requestId, groupIdToActor.keySet()), getSelf());
+        }else{
+            log.warning("Ignoring RequestGroupList call for {}.  This device manager handles calls for {}",
+                    requestGroupList.deviceManagerId, managerId);
+        }
     }
 
     private void onTrackDeviceManager(IotSupervisor.TrackDeviceManager trackDeviceManager) {

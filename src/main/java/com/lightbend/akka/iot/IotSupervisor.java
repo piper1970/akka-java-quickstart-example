@@ -3,8 +3,10 @@ package com.lightbend.akka.iot;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
+import akka.actor.Terminated;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.japi.pf.ReceiveBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,17 +16,11 @@ import java.util.Set;
 public class IotSupervisor extends AbstractActor {
 
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
-
-    private final String supervisorId;
     private final Map<String, ActorRef> managerIdToActor = new HashMap<>();
     private final Map<ActorRef, String> actorToManagerId = new HashMap<>();
 
-    private IotSupervisor(String supervisorId) {
-        this.supervisorId = supervisorId;
-    }
-
-    public static Props props(String supervisorId) {
-        return Props.create(IotSupervisor.class, () -> new IotSupervisor(supervisorId) );
+    public static Props props() {
+        return Props.create(IotSupervisor.class, IotSupervisor::new );
     }
 
     @Override
@@ -42,8 +38,20 @@ public class IotSupervisor extends AbstractActor {
         return receiveBuilder()
                 .match(RequestDeviceManagerList.class, this::onRequestDeviceManagerList)
                 .match(TrackDeviceManager.class, this::onTrackDeviceManager)
+                .match(Terminated.class, this::onTerminated)
                 .build();
     }
+
+    private void onTerminated(Terminated terminated) {
+        ActorRef actor = terminated.getActor();
+        Optional.ofNullable(actorToManagerId.get(actor))
+                .ifPresent(id -> {
+                    log.info("Terminating device manager with id {}", id);
+                    managerIdToActor.remove(id);
+                    actorToManagerId.remove(actor);
+                });
+    }
+
 
     private void onTrackDeviceManager(TrackDeviceManager trackDeviceManager) {
         String deviceManagerId = trackDeviceManager.deviceManagerId;
@@ -54,7 +62,7 @@ public class IotSupervisor extends AbstractActor {
 
     private void trackNewDeviceManager(TrackDeviceManager trackDeviceManager, String deviceManagerId) {
         log.info("Creating device manager for {}", deviceManagerId);
-        ActorRef managerActor = getContext().actorOf(IotDeviceManager.props(supervisorId, deviceManagerId), "iotDeviceManager-" + deviceManagerId);
+        ActorRef managerActor = getContext().actorOf(IotDeviceManager.props(deviceManagerId), "iotDeviceManager-" + deviceManagerId);
         getContext().watch(managerActor);
         managerActor.forward(trackDeviceManager, getContext());
         managerIdToActor.put(deviceManagerId, managerActor);
@@ -78,7 +86,7 @@ public class IotSupervisor extends AbstractActor {
         final long requestId;
         final Set<String> ids;
 
-        public ReplyDeviceManagerList(long requestId, Set<String> ids) {
+        ReplyDeviceManagerList(long requestId, Set<String> ids) {
             this.requestId = requestId;
             this.ids = ids;
         }
@@ -94,10 +102,10 @@ public class IotSupervisor extends AbstractActor {
         }
     }
 
-    public static final class DeviceManagerRegistered{
+    static final class DeviceManagerRegistered{
         final long requestId;
 
-        public DeviceManagerRegistered(long requestId) {
+        DeviceManagerRegistered(long requestId) {
             this.requestId = requestId;
         }
     }
