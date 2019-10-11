@@ -1,9 +1,7 @@
 package com.lightbend.akka.iot;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.japi.pf.ReceiveBuilder;
 
 import java.io.IOException;
 
@@ -15,23 +13,23 @@ public class IotSystem {
 
     public static void main(String[] args) throws IOException {
         IotSystem system = new IotSystem("iotSystem");
-        try{
+        try {
             // Do something meaningful....
             System.out.println("Press Enter to exit the system");
             System.in.read();
-        }finally{
+        } finally {
             system.terminate();
         }
 
     }
 
-    private IotSystem(String systemName){
+    private IotSystem(String systemName) {
         String supervisorName = systemName + "-supervisor";
         system = ActorSystem.create(systemName);
         supervisor = system.actorOf(IotSupervisor.props(), supervisorName);
     }
 
-    private void terminate(){
+    private void terminate() {
         system.terminate();
     }
 }
