@@ -162,6 +162,7 @@ public class IotDeviceGroup extends AbstractActor {
                     log.info("Iot Device actor for {} has been terminated", deviceId);
                     actorToDeviceId.remove(ref);
                     deviceIdToActor.remove(deviceId);
+                    getContext().unwatch(ref);
                 });
     }
 }

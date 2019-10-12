@@ -4,8 +4,14 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.util.Timeout;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
 
 import java.io.IOException;
+import java.time.Duration;
+
+import static akka.pattern.Patterns.ask;
 
 class PrintMyActorRefActor extends AbstractActor {
     static Props props() {
@@ -79,6 +85,7 @@ class SupervisingActor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
+                .matchEquals("Show me the money", msg -> child.forward(msg, getContext()))
                 .matchEquals("failChild", f ->
                         child.tell("fail", getSelf()))
                 .build();
@@ -103,6 +110,7 @@ class SupervisedActor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
+                .matchEquals("Show me the money", msg -> sender().tell(1_000_000, getSelf()))
                 .matchEquals("fail", f -> {
                     System.out.println("supervised actor fails now");
                     throw new Exception("I failed!");
@@ -113,7 +121,7 @@ class SupervisedActor extends AbstractActor {
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class ActorHierarchyExperiments {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         ActorSystem system = ActorSystem.create("testSystem");
 
         ActorRef firstRef = system.actorOf(PrintMyActorRefActor.props(), "first-actor");
@@ -124,6 +132,12 @@ public class ActorHierarchyExperiments {
         System.out.println("First: " + firstRef);
         firstRef.tell("printit", ActorRef.noSender());
 
+        // TODO: NOTE THIS SHOWS HOW TO TALK TO ACTOR FROM OUTSIDE.. at least one way...
+        Future<Object> future = ask(supervisingActor, "Show me the money", Timeout.create(Duration.ofSeconds(300)));
+        Integer result = (Integer)Await.result(future, Timeout.create(Duration.ofSeconds(300)).duration());
+        System.out.println("My current value is: " + result);
+
+
         // prestart,postStop, and child handling
         firstStopperRef.tell("stop", ActorRef.noSender());
 
@@ -133,6 +147,7 @@ public class ActorHierarchyExperiments {
         try {
             System.in.read();
         } finally {
+            System.out.println("Terminating...");
             system.terminate();
         }
     }

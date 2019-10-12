@@ -6,7 +6,6 @@ import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.japi.pf.ReceiveBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,7 +19,7 @@ public class IotSupervisor extends AbstractActor {
     private final Map<ActorRef, String> actorToManagerId = new HashMap<>();
 
     public static Props props() {
-        return Props.create(IotSupervisor.class, IotSupervisor::new );
+        return Props.create(IotSupervisor.class, IotSupervisor::new);
     }
 
     @Override
@@ -43,12 +42,13 @@ public class IotSupervisor extends AbstractActor {
     }
 
     private void onTerminated(Terminated terminated) {
-        ActorRef actor = terminated.getActor();
-        Optional.ofNullable(actorToManagerId.get(actor))
+        ActorRef deviceManagerRef = terminated.getActor();
+        Optional.ofNullable(actorToManagerId.get(deviceManagerRef))
                 .ifPresent(id -> {
                     log.info("Terminating device manager with id {}", id);
                     managerIdToActor.remove(id);
-                    actorToManagerId.remove(actor);
+                    actorToManagerId.remove(deviceManagerRef);
+                    getContext().unwatch(deviceManagerRef);
                 });
     }
 
@@ -74,7 +74,7 @@ public class IotSupervisor extends AbstractActor {
                 managerIdToActor.keySet()), getSelf());
     }
 
-    public static final class RequestDeviceManagerList{
+    public static final class RequestDeviceManagerList {
         final long requestId;
 
         public RequestDeviceManagerList(long requestId) {
@@ -82,7 +82,7 @@ public class IotSupervisor extends AbstractActor {
         }
     }
 
-    public static final class ReplyDeviceManagerList{
+    public static final class ReplyDeviceManagerList {
         final long requestId;
         final Set<String> ids;
 
@@ -92,7 +92,7 @@ public class IotSupervisor extends AbstractActor {
         }
     }
 
-    public static final class TrackDeviceManager{
+    public static final class TrackDeviceManager {
         final long requestId;
         final String deviceManagerId;
 
@@ -102,7 +102,7 @@ public class IotSupervisor extends AbstractActor {
         }
     }
 
-    static final class DeviceManagerRegistered{
+    static final class DeviceManagerRegistered {
         final long requestId;
 
         DeviceManagerRegistered(long requestId) {
