@@ -32,13 +32,27 @@ public class IotSupervisor extends AbstractActor {
         log.info("Iot Supervisor stopped");
     }
 
+    // Do something meaningful....
+    // get device manager list
+    // get device manager by list
+
     @Override
     public Receive createReceive() {
         return receiveBuilder()
                 .match(RequestDeviceManagerList.class, this::onRequestDeviceManagerList)
                 .match(TrackDeviceManager.class, this::onTrackDeviceManager)
+                .match(RequestDeviceManagerById.class, this::onRequestDeviceManagerById)
                 .match(Terminated.class, this::onTerminated)
                 .build();
+    }
+
+    private void onRequestDeviceManagerById(RequestDeviceManagerById msg) {
+        String deviceManagerById = msg.deviceManagerId;
+        Optional.ofNullable(managerIdToActor.get(deviceManagerById))
+                .ifPresentOrElse(actorRef -> {
+                    log.info("Device manager {} requested", deviceManagerById);
+                    getSender().tell(new ResponseDeviceManagerById(msg.requestId, actorRef), getSelf());
+                }, () -> log.warning("Device manager {} not managed by this supervisor", deviceManagerById));
     }
 
     private void onTerminated(Terminated terminated) {
@@ -99,6 +113,26 @@ public class IotSupervisor extends AbstractActor {
         public TrackDeviceManager(long requestId, String deviceManagerId) {
             this.requestId = requestId;
             this.deviceManagerId = deviceManagerId;
+        }
+    }
+
+    public static final class RequestDeviceManagerById {
+        final long requestId;
+        final String deviceManagerId;
+
+        public RequestDeviceManagerById(long requestId, String deviceManagerId) {
+            this.requestId = requestId;
+            this.deviceManagerId = deviceManagerId;
+        }
+    }
+
+    public static final class ResponseDeviceManagerById {
+        final long requestId;
+        final ActorRef deviceManager;
+
+        public ResponseDeviceManagerById(long requestId, ActorRef deviceManager) {
+            this.requestId = requestId;
+            this.deviceManager = deviceManager;
         }
     }
 

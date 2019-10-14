@@ -8,7 +8,6 @@ import akka.util.Timeout;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 
-import java.io.IOException;
 import java.time.Duration;
 
 import static akka.pattern.Patterns.ask;
@@ -134,7 +133,7 @@ public class ActorHierarchyExperiments {
 
         // TODO: NOTE THIS SHOWS HOW TO TALK TO ACTOR FROM OUTSIDE.. at least one way...
         Future<Object> future = ask(supervisingActor, "Show me the money", Timeout.create(Duration.ofSeconds(300)));
-        Integer result = (Integer)Await.result(future, Timeout.create(Duration.ofSeconds(300)).duration());
+        Integer result = (Integer) Await.result(future, Timeout.create(Duration.ofSeconds(300)).duration());
         System.out.println("My current value is: " + result);
 
 

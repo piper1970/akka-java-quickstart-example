@@ -54,6 +54,26 @@ public class IotDeviceManager extends AbstractActor {
         }
     }
 
+    public static final class RequestDeviceGroupById{
+        public final long requestId;
+        public final String deviceGroupId;
+
+        public RequestDeviceGroupById(long requestId, String deviceGroupId) {
+            this.requestId = requestId;
+            this.deviceGroupId = deviceGroupId;
+        }
+    }
+
+    public static final class RespondDeviceGroupById{
+        public final long requestId;
+        public final ActorRef deviceGroupActor;
+
+        public RespondDeviceGroupById(long requestId, ActorRef deviceGroupActor) {
+            this.requestId = requestId;
+            this.deviceGroupActor = deviceGroupActor;
+        }
+    }
+
     public static final class DeviceRegistered {
     }
 
@@ -72,9 +92,18 @@ public class IotDeviceManager extends AbstractActor {
         return receiveBuilder()
                 .match(RequestTrackDevice.class, this::onTrackDevice)
                 .match(IotSupervisor.TrackDeviceManager.class, this::onTrackDeviceManager)
+                .match(RequestDeviceGroupById.class, this::onRequestDeviceGroupById)
                 .match(Terminated.class, this::onTerminated)
                 .match(RequestGroupList.class, this::onRequestGroupList)
                 .build();
+    }
+
+    private <P> void onRequestDeviceGroupById(RequestDeviceGroupById msg) {
+        Optional.ofNullable(groupIdToActor.get(msg.deviceGroupId))
+                .ifPresentOrElse(actor -> {
+                    log.info("Getting device group {} for sender with request", msg.deviceGroupId, msg.requestId);
+                    getSender().tell(new RespondDeviceGroupById(msg.requestId, actor), getSelf());
+                }, () -> log.warning("Device group {} not managed by this actor", msg.deviceGroupId));
     }
 
     private void onRequestGroupList(RequestGroupList requestGroupList) {
