@@ -77,6 +77,70 @@ public class IotDeviceManager extends AbstractActor {
     public static final class DeviceRegistered {
     }
 
+    public interface DeviceGroupTemperatureReading{}
+
+    public enum DeviceGroupNotAvailable implements DeviceGroupTemperatureReading{
+        INSTANCE
+    }
+
+    public enum DeviceGroupTemperaturesNotAvailable implements DeviceGroupTemperatureReading{
+        INSTANCE
+    }
+
+    public enum DeviceGroupTimedOut implements DeviceGroupTemperatureReading{
+        INSTANCE
+    }
+
+    public static final class DeviceGroupTemperatures implements DeviceGroupTemperatureReading{
+        public final long requestId;
+        public final Map<String, IotDeviceGroup.TemperatureReading> groupTemperatureReading;
+
+        public DeviceGroupTemperatures(long requestId, Map<String, IotDeviceGroup.TemperatureReading> groupTemperatureReading) {
+            this.requestId = requestId;
+            this.groupTemperatureReading = groupTemperatureReading;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            DeviceGroupTemperatures that = (DeviceGroupTemperatures) o;
+            return requestId == that.requestId &&
+                    Objects.equals(groupTemperatureReading, that.groupTemperatureReading);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(requestId, groupTemperatureReading);
+        }
+
+        @Override
+        public String toString() {
+            return "DeviceGroupTemperatures{" +
+                    "requestId=" + requestId +
+                    ", groupTemperatureReading=" + groupTemperatureReading +
+                    '}';
+        }
+    }
+
+    public final class RequestAllGroupTemperatures{
+        final long requestId;
+
+        public RequestAllGroupTemperatures(long requestId) {
+            this.requestId = requestId;
+        }
+    }
+
+    public static final class RespondAllGroupTemperatures{
+        final long requestId;
+        final Map<String, DeviceGroupTemperatureReading> groupTemperatures;
+
+        public RespondAllGroupTemperatures(long requestId, Map<String, DeviceGroupTemperatureReading> groupTemperatures) {
+            this.requestId = requestId;
+            this.groupTemperatures = groupTemperatures;
+        }
+    }
+
     @Override
     public void preStart() {
         log.info("IotDeviceManager started.");

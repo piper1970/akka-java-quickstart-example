@@ -15,8 +15,7 @@ public class IotDeviceGroupQuery extends AbstractActor {
     private final Map<ActorRef, String> actorToDeviceId;
     private final long requestId;
     private final ActorRef requester;
-
-    private Cancellable queryTimeoutTimer;
+    private final Cancellable queryTimeoutTimer;
 
     private IotDeviceGroupQuery(Map<ActorRef, String> actorToDeviceId,
                                 long requestId,
@@ -64,7 +63,7 @@ public class IotDeviceGroupQuery extends AbstractActor {
         return receiveBuilder()
                 .match(IotDevice.RespondTemperature.class, rt -> onRespondTemperature(rt, repliesSoFar, stillWaiting))
                 .match(Terminated.class, t -> onTerminated(t, repliesSoFar, stillWaiting))
-                .match(CollectionTimeout.class, ct -> this.onCollectionTimeout(ct, repliesSoFar, stillWaiting))
+                .match(CollectionTimeout.class, ignored -> this.onCollectionTimeout(repliesSoFar, stillWaiting))
                 .build();
     }
 
@@ -75,7 +74,7 @@ public class IotDeviceGroupQuery extends AbstractActor {
     }
 
     @SuppressWarnings("unused")
-    private void onCollectionTimeout(CollectionTimeout t,
+    private void onCollectionTimeout(
                                      Map<String, IotDeviceGroup.TemperatureReading> repliesSoFar,
                                      Set<ActorRef> stillWaiting) {
         Map<String, IotDeviceGroup.TemperatureReading> replies = new HashMap<>(repliesSoFar);
