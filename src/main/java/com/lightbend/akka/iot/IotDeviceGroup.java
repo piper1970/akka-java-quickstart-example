@@ -128,6 +128,7 @@ public class IotDeviceGroup extends AbstractActor {
     }
 
     private void onAllTemperatures(RequestAllTemperatures r) {
+        log.info("Handling request for all temperatures for request {}", r.requestId);
         Map<ActorRef, String> actorToDeviceIdCopy = new HashMap<>(actorToDeviceId);
         getContext().actorOf(IotDeviceGroupQuery.props(
                 actorToDeviceIdCopy, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)
@@ -135,6 +136,7 @@ public class IotDeviceGroup extends AbstractActor {
     }
 
     private void onTrackDevice(IotDeviceManager.RequestTrackDevice trackMsg) {
+        log.info("Handling request to track device {} of group {}", trackMsg.deviceId, trackMsg.groupId);
         if (groupId.equals(trackMsg.groupId)) {
             Optional.ofNullable(deviceIdToActor.getOrDefault(trackMsg.deviceId, null))
                     .ifPresentOrElse(deviceActor -> deviceActor.forward(trackMsg, getContext()), () -> {
@@ -152,6 +154,7 @@ public class IotDeviceGroup extends AbstractActor {
     }
 
     private void onDeviceList(RequestDeviceList r) {
+        log.info("Handling request {} for device list", r.requestId);
         getSender().tell(new ReplyDeviceList(r.requestId, deviceIdToActor.keySet()), getSelf());
     }
 

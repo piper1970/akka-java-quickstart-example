@@ -80,9 +80,11 @@ public class IotDevice extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(IotDeviceManager.RequestTrackDevice.class, this::onRequestTrackDevice)
-                .match(ReadTemperature.class, r ->
-                        getSender()
-                                .tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf()))
+                .match(ReadTemperature.class, r -> {
+                    log.info("Handling request {} for temperature reading", r.requestId);
+                    getSender()
+                            .tell(new RespondTemperature(r.requestId, lastTemperatureReading), getSelf());
+                })
                 .match(RecordTemperature.class, r -> {
                     log.info("Recorded temperature reading {} with {}", r.value, r.requestId);
                     lastTemperatureReading = r.value;
@@ -92,6 +94,7 @@ public class IotDevice extends AbstractActor {
     }
 
     private void onRequestTrackDevice(IotDeviceManager.RequestTrackDevice r) {
+        log.info("Handling request to track device {} of group {}", r.deviceId, r.groupId);
         if (this.groupId.equals(r.groupId) && this.deviceId.equals(r.deviceId)) {
             getSender().tell(new IotDeviceManager.DeviceRegistered(), getSelf());
         } else {

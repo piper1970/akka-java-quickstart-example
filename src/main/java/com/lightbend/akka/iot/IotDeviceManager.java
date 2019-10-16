@@ -6,8 +6,10 @@ import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class IotDeviceManager extends AbstractActor {
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
@@ -23,7 +25,6 @@ public class IotDeviceManager extends AbstractActor {
         return Props.create(IotDeviceManager.class, () -> new IotDeviceManager(managerId));
     }
 
-    // TODO: need to add getGroupList functionality, like in IotDeviceGroup getDeviceList
     public static final class RequestGroupList {
         final long requestId;
         final String deviceManagerId;
@@ -83,10 +84,6 @@ public class IotDeviceManager extends AbstractActor {
         INSTANCE
     }
 
-    public enum DeviceGroupTemperaturesNotAvailable implements DeviceGroupTemperatureReading{
-        INSTANCE
-    }
-
     public enum DeviceGroupTimedOut implements DeviceGroupTemperatureReading{
         INSTANCE
     }
@@ -123,7 +120,7 @@ public class IotDeviceManager extends AbstractActor {
         }
     }
 
-    public final class RequestAllGroupTemperatures{
+    public static final class RequestAllGroupTemperatures{
         final long requestId;
 
         public RequestAllGroupTemperatures(long requestId) {
@@ -159,10 +156,19 @@ public class IotDeviceManager extends AbstractActor {
                 .match(RequestDeviceGroupById.class, this::onRequestDeviceGroupById)
                 .match(Terminated.class, this::onTerminated)
                 .match(RequestGroupList.class, this::onRequestGroupList)
+                .match(RequestAllGroupTemperatures.class, this::onRequestAllGroupTemperatures)
                 .build();
     }
 
-    private <P> void onRequestDeviceGroupById(RequestDeviceGroupById msg) {
+    private void onRequestAllGroupTemperatures(RequestAllGroupTemperatures msg) {
+        log.info("Requesting all group temperatures for request {}", msg.requestId);
+        Map<ActorRef, String> newActorToGroupId = new HashMap<>(actorToGroupId);
+        getContext().actorOf(IotDeviceManagerQuery.props(newActorToGroupId, msg.requestId,
+                getSender(), new FiniteDuration(30, TimeUnit.SECONDS)));
+    }
+
+    private void onRequestDeviceGroupById(RequestDeviceGroupById msg) {
+        log.info("Requestiong device group by id for device {} on request {}", msg.deviceGroupId, msg.requestId);
         Optional.ofNullable(groupIdToActor.get(msg.deviceGroupId))
                 .ifPresentOrElse(actor -> {
                     log.info("Getting device group {} for sender with request", msg.deviceGroupId, msg.requestId);
@@ -171,6 +177,7 @@ public class IotDeviceManager extends AbstractActor {
     }
 
     private void onRequestGroupList(RequestGroupList requestGroupList) {
+        log.info("Requesting group list for device manager {} on request id {}", requestGroupList.deviceManagerId, requestGroupList.requestId);
         if(managerId.equals(requestGroupList.deviceManagerId)){
             getSender().tell(new ReplyGroupList(requestGroupList.requestId, groupIdToActor.keySet()), getSelf());
         }else{
@@ -180,6 +187,7 @@ public class IotDeviceManager extends AbstractActor {
     }
 
     private void onTrackDeviceManager(IotSupervisor.TrackDeviceManager trackDeviceManager) {
+        log.info("Requesting to track device manager {} on request {}", trackDeviceManager.deviceManagerId, trackDeviceManager.requestId);
         if(managerId.equals(trackDeviceManager.deviceManagerId)){
             getSender().tell(new IotSupervisor.DeviceManagerRegistered(trackDeviceManager.requestId), getSelf());
         }else{
@@ -189,6 +197,7 @@ public class IotDeviceManager extends AbstractActor {
     }
 
     private void onTrackDevice(RequestTrackDevice trackMsg) {
+        log.info("Requesting to track device {} of group {} from device manager", trackMsg.deviceId, trackMsg.groupId);
         String groupId = trackMsg.groupId;
         Optional.ofNullable(groupIdToActor.get(groupId))
                 .ifPresentOrElse(ref -> ref.forward(trackMsg, getContext()), () -> {

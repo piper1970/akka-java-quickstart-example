@@ -8,12 +8,10 @@ import scala.concurrent.Await;
 
 import java.time.Duration;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static akka.pattern.Patterns.ask;
 
-@SuppressWarnings({"ResultOfMethodCallIgnored", "unchecked"})
 public class IotSystem {
 
     private final ActorSystem system;
@@ -31,30 +29,30 @@ public class IotSystem {
             IotSupervisor.DeviceManagerRegistered trackDeviceManagerResponse = (IotSupervisor.DeviceManagerRegistered) Await.result(ask(system.supervisor, deviceManagerMsg, Timeout.create(Duration.ofSeconds(30))),
                     Timeout.create(Duration.ofSeconds(30)).duration());
 
-            if(trackDeviceManagerResponse == null){
+            if (trackDeviceManagerResponse == null) {
                 System.err.println("Errors occurred setting up device manager...");
             }
 
             // Get device manager list
             IotSupervisor.RequestDeviceManagerList deviceManagerListRequest = new IotSupervisor.RequestDeviceManagerList(2L);
-            Set<String> deviceManagerList = (Set<String>) Await.result(ask(system.supervisor, deviceManagerListRequest, Timeout.create(Duration.ofSeconds(30))),
+            IotSupervisor.ReplyDeviceManagerList replyDeviceManagerList = (IotSupervisor.ReplyDeviceManagerList) Await.result(ask(system.supervisor, deviceManagerListRequest, Timeout.create(Duration.ofSeconds(30))),
                     Timeout.create(Duration.ofSeconds(30)).duration());
 
             // Make sure deviceManagerId is in the list
-            if(deviceManagerList.contains(deviceManagerId)){
+            if (replyDeviceManagerList.ids.contains(deviceManagerId)) {
                 System.out.println("Found device manager id in list");
             }
 
             // Get device manager from list
             IotSupervisor.RequestDeviceManagerById requestDeviceManagerById = new IotSupervisor.RequestDeviceManagerById(3L, deviceManagerId);
-            IotSupervisor.ResponseDeviceManagerById deviceManagerResponse = (IotSupervisor.ResponseDeviceManagerById)Await.result(ask(system.supervisor, requestDeviceManagerById, Timeout.create(Duration.ofSeconds(30))),
+            IotSupervisor.ResponseDeviceManagerById deviceManagerResponse = (IotSupervisor.ResponseDeviceManagerById) Await.result(ask(system.supervisor, requestDeviceManagerById, Timeout.create(Duration.ofSeconds(30))),
                     Timeout.create(Duration.ofSeconds(30)).duration());
 
             ActorRef deviceManager = Optional.ofNullable(deviceManagerResponse)
                     .map(resp -> resp.deviceManager)
                     .orElse(null);
 
-            if(deviceManager == null){
+            if (deviceManager == null) {
                 System.err.println("Problems obtaining device manager");
                 throw new RuntimeException("ByeBye");
             }
@@ -62,10 +60,10 @@ public class IotSystem {
 
             // Track device with device manager
             IotDeviceManager.RequestTrackDevice requestTrackDevice = new IotDeviceManager.RequestTrackDevice("iot-group", "iot-device-1");
-            IotDeviceManager.DeviceRegistered trackDeviceResponse = (IotDeviceManager.DeviceRegistered)Await.result(ask(deviceManager, requestTrackDevice, Timeout.create(Duration.ofSeconds(30))),
+            IotDeviceManager.DeviceRegistered trackDeviceResponse = (IotDeviceManager.DeviceRegistered) Await.result(ask(deviceManager, requestTrackDevice, Timeout.create(Duration.ofSeconds(30))),
                     Timeout.create(Duration.ofSeconds(30)).duration());
 
-            if(trackDeviceResponse == null){
+            if (trackDeviceResponse == null) {
                 System.err.println("Problems registering device");
             }
 
@@ -86,21 +84,44 @@ public class IotSystem {
             TimeUnit.SECONDS.sleep(5);
 
             IotDeviceManager.RequestDeviceGroupById requestDeviceGroupById = new IotDeviceManager.RequestDeviceGroupById(5L, "iot-group");
-            IotDeviceManager.RespondDeviceGroupById deviceGroupByIdResponse = (IotDeviceManager.RespondDeviceGroupById)Await.result(ask(deviceManager, requestDeviceGroupById, Timeout.create(Duration.ofSeconds(30))),
+            IotDeviceManager.RespondDeviceGroupById deviceGroupByIdResponse = (IotDeviceManager.RespondDeviceGroupById) Await.result(ask(deviceManager, requestDeviceGroupById, Timeout.create(Duration.ofSeconds(30))),
                     Timeout.create(Duration.ofSeconds(30)).duration());
 
-            ActorRef deviceGroupById = Optional.ofNullable(deviceGroupByIdResponse)
-                    .map(resp -> resp.deviceGroupActor)
-                    .orElseGet(() -> {
-                        System.err.println("Problems obtaining device group");
-                        throw new RuntimeException("ByeBye");
-                    });
 
             // TODO: Get all the temperatures from the device group.
+            IotDeviceManager.RequestAllGroupTemperatures requestAllGroupTemperatures = new IotDeviceManager.RequestAllGroupTemperatures(6L);
+            IotDeviceManager.RespondAllGroupTemperatures respondAllGroupTemperatures = (IotDeviceManager.RespondAllGroupTemperatures) Await.result(ask(deviceManager, requestAllGroupTemperatures, Timeout.create(Duration.ofSeconds(30))),
+                    Timeout.create(Duration.ofSeconds(30)).duration());
 
+            respondAllGroupTemperatures.groupTemperatures
+                    .forEach((key, value) -> {
+                        if (value instanceof IotDeviceManager.DeviceGroupTemperatures) {
+                            IotDeviceManager.DeviceGroupTemperatures deviceTempList = (IotDeviceManager.DeviceGroupTemperatures) value;
+                            deviceTempList.groupTemperatureReading
+                                    .forEach((key1, val1) -> {
+                                        if (val1 instanceof IotDeviceGroup.TemperatureNotAvailable) {
+                                            System.out.println(String.format("Tempererature for device %s of group %s is not available", key1, key));
+                                        } else if (val1 instanceof IotDeviceGroup.DeviceNotAvailable) {
+                                            System.out.println(String.format("Device %s of group %s is not available", key1, key));
+                                        } else if (val1 instanceof IotDeviceGroup.DeviceTimedOut) {
+                                            System.out.println(String.format("Device %s of group %s timed out", key1, key));
+                                        } else if (val1 instanceof IotDeviceGroup.Temperature) {
+                                            IotDeviceGroup.Temperature tempVal = (IotDeviceGroup.Temperature) val1;
+                                            System.out.println(String.format("Tempererature for device %s of group %s is %f", key1, key, tempVal.value));
+                                        }
+                                    });
+                        } else if (value instanceof IotDeviceManager.DeviceGroupNotAvailable) {
+                            System.out.println("Device group not available for " + key);
+                        } else if (value instanceof IotDeviceManager.DeviceGroupTimedOut) {
+                            System.out.println("Device group timed out for " + key);
+                        }
+                    });
 
             System.out.println("Press Enter to exit the system");
             System.in.read();
+        } catch (Exception exc) {
+            System.err.println("Exceptions occurred: " + exc.getMessage());
+            exc.printStackTrace();
         } finally {
             system.terminate();
         }
