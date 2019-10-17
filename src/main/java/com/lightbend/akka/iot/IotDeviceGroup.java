@@ -123,11 +123,11 @@ public class IotDeviceGroup extends AbstractActor {
                 .match(IotDeviceManager.RequestTrackDevice.class, this::onTrackDevice)
                 .match(RequestDeviceList.class, this::onDeviceList)
                 .match(Terminated.class, this::onTerminated)
-                .match(RequestAllTemperatures.class, this::onAllTemperatures)
+                .match(RequestAllTemperatures.class, this::onRequestAllTemperatures)
                 .build();
     }
 
-    private void onAllTemperatures(RequestAllTemperatures r) {
+    private void onRequestAllTemperatures(RequestAllTemperatures r) {
         log.info("Handling request for all temperatures for request {}", r.requestId);
         Map<ActorRef, String> actorToDeviceIdCopy = new HashMap<>(actorToDeviceId);
         getContext().actorOf(IotDeviceGroupQuery.props(

@@ -1,6 +1,8 @@
 package com.lightbend.akka.iot;
 
 import akka.actor.*;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.HashMap;
@@ -9,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class IotDeviceManagerQuery extends AbstractActor {
+    private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
     private static final class CollectionTimeout {
     }
 
@@ -79,6 +82,7 @@ public class IotDeviceManagerQuery extends AbstractActor {
     }
 
     private void onRespondAllTemperatures(IotDeviceGroup.RespondAllTemperatures msg, Map<String, IotDeviceManager.DeviceGroupTemperatureReading> repliesSoFar, Set<ActorRef> stillWaiting) {
+        log.info("Responding to IotDeviceGroup.RespondAllTemperatures");
         receivedResponse(getSender(), new IotDeviceManager.DeviceGroupTemperatures(msg.requestId, msg.temperatures), repliesSoFar, stillWaiting);
     }
 
@@ -92,7 +96,8 @@ public class IotDeviceManagerQuery extends AbstractActor {
         Map<String, IotDeviceManager.DeviceGroupTemperatureReading> newRepliesSoFar = new HashMap<>(repliesSoFar);
         newRepliesSoFar.put(groupId, reading);
         if (newStillWaiting.isEmpty()) {
-            requester.tell(new IotDeviceManager.RespondAllGroupTemperatures(requestId, newRepliesSoFar), getSelf());
+            log.info("Sending IotDeviceManager.RespondAllGroupTemperatures response to sender with path {}", requester.path());
+            requester.tell(new IotDeviceManager.RespondAllGroupTemperatures(requestId, newRepliesSoFar), getContext().getParent());
             getContext().stop(getSelf());
         } else {
             getContext().become(waitingForReplies(newRepliesSoFar, newStillWaiting));

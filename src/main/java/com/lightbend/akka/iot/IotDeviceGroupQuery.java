@@ -1,6 +1,8 @@
 package com.lightbend.akka.iot;
 
 import akka.actor.*;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.HashMap;
@@ -93,8 +95,6 @@ public class IotDeviceGroupQuery extends AbstractActor {
         IotDeviceGroup.TemperatureReading reading = r.getValue().map(v -> (IotDeviceGroup.TemperatureReading) new IotDeviceGroup.Temperature(v))
                 .orElse(IotDeviceGroup.TemperatureNotAvailable.INSTANCE);
         receivedResponse(deviceActor, reading, stillWaiting, repliesSoFar);
-
-
     }
 
     private void receivedResponse(ActorRef deviceActor,
@@ -110,7 +110,7 @@ public class IotDeviceGroupQuery extends AbstractActor {
         Map<String, IotDeviceGroup.TemperatureReading> newRepliesSoFar = new HashMap<>(repliesSoFar);
         newRepliesSoFar.put(deviceId, reading);
         if (newStillWaiting.isEmpty()) {
-            requester.tell(new IotDeviceGroup.RespondAllTemperatures(requestId, newRepliesSoFar), getSelf());
+            requester.tell(new IotDeviceGroup.RespondAllTemperatures(requestId, newRepliesSoFar), getContext().getParent());
             getContext().stop(getSelf());
         } else {
             getContext().become(waitingForReplies(newRepliesSoFar, newStillWaiting));
