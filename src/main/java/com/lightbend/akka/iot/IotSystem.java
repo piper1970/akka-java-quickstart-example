@@ -70,8 +70,8 @@ public class IotSystem {
             // Lets send a message to the device from outside of system....
             // Hope this works....
             ActorPath deviceManagerPath = deviceManager.path();
-            Optional.ofNullable(deviceManagerPath.child("iot-group"))
-                    .flatMap(groupPath -> Optional.ofNullable(groupPath.child("iot-device-1")))
+            Optional.ofNullable(deviceManagerPath.child("iotGroup-iot-group"))
+                    .flatMap(groupPath -> Optional.ofNullable(groupPath.child("iotDevice-iot-device-1")))
                     .ifPresentOrElse(childPath -> {
                         ActorRef childActor = system.system.actorFor(childPath);
                         IotDevice.RecordTemperature recordTemperature = new IotDevice.RecordTemperature(4L, 33.5);
@@ -87,12 +87,36 @@ public class IotSystem {
             IotDeviceManager.RespondDeviceGroupById deviceGroupByIdResponse = (IotDeviceManager.RespondDeviceGroupById) Await.result(ask(deviceManager, requestDeviceGroupById, Timeout.create(Duration.ofSeconds(30))),
                     Timeout.create(Duration.ofSeconds(30)).duration());
 
+            ActorRef deviceGroup = Optional.ofNullable(deviceGroupByIdResponse)
+                    .map(resp -> resp.deviceGroupActor)
+                    .orElseGet(() -> {
+                        System.err.println("Problems obtaining device group");
+                        throw new RuntimeException("ByeBye");
+                    });
 
-            // TODO: Get all the temperatures from the device group.
+            IotDeviceGroup.RequestAllTemperatures requestAllTemperatures = new IotDeviceGroup.RequestAllTemperatures(9L);
+            IotDeviceGroup.RespondAllTemperatures respondAllTemperatures = (IotDeviceGroup.RespondAllTemperatures) Await.result(ask(deviceGroup,requestAllTemperatures, Timeout.create(Duration.ofSeconds(30))),
+                    Timeout.create(Duration.ofSeconds(30)).duration());
+
+            System.out.println("RespondAllTemperatures for device group directly finished...");
+            respondAllTemperatures.temperatures.forEach((key, val) -> {
+                if (val instanceof IotDeviceGroup.TemperatureNotAvailable) {
+                    System.out.println(String.format("Tempererature for device %s is not available", key));
+                } else if (val instanceof IotDeviceGroup.DeviceNotAvailable) {
+                    System.out.println(String.format("Device %s is not available", key));
+                } else if (val instanceof IotDeviceGroup.DeviceTimedOut) {
+                    System.out.println(String.format("Device %s timed out", key));
+                } else if (val instanceof IotDeviceGroup.Temperature) {
+                    IotDeviceGroup.Temperature tempVal = (IotDeviceGroup.Temperature) val;
+                    System.out.println(String.format("Tempererature for device %s is %f", key, tempVal.value));
+                }
+            });
+
             IotDeviceManager.RequestAllGroupTemperatures requestAllGroupTemperatures = new IotDeviceManager.RequestAllGroupTemperatures(6L);
             IotDeviceManager.RespondAllGroupTemperatures respondAllGroupTemperatures = (IotDeviceManager.RespondAllGroupTemperatures) Await.result(ask(deviceManager, requestAllGroupTemperatures, Timeout.create(Duration.ofSeconds(30))),
                     Timeout.create(Duration.ofSeconds(30)).duration());
 
+            System.out.println("RespondAllGroupTemperatures for device manager finished...");
             respondAllGroupTemperatures.groupTemperatures
                     .forEach((key, value) -> {
                         if (value instanceof IotDeviceManager.DeviceGroupTemperatures) {
