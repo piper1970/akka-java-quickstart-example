@@ -9,6 +9,7 @@ import akka.japi.pf.ReceiveBuilder;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 // Simple example of context switching logic between states of the alarm.
+@SuppressWarnings("unused")
 public class Alarm extends AbstractActor {
     private final LoggingAdapter logger = Logging.getLogger(getContext().getSystem(), this);
 
@@ -19,7 +20,7 @@ public class Alarm extends AbstractActor {
     }
 
     // Messages
-    static final class Activity{}
+    private static final class Activity{}
     static final class Disable{
         private final String password;
 

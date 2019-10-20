@@ -1,8 +1,6 @@
 package com.lightbend.akka.iot;
 
 import akka.actor.*;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.HashMap;
@@ -77,8 +75,8 @@ public class IotDeviceGroupQuery extends AbstractActor {
 
     @SuppressWarnings("unused")
     private void onCollectionTimeout(
-                                     Map<String, IotDeviceGroup.TemperatureReading> repliesSoFar,
-                                     Set<ActorRef> stillWaiting) {
+            Map<String, IotDeviceGroup.TemperatureReading> repliesSoFar,
+            Set<ActorRef> stillWaiting) {
         Map<String, IotDeviceGroup.TemperatureReading> replies = new HashMap<>(repliesSoFar);
         stillWaiting.forEach(deviceActor -> {
             String deviceId = actorToDeviceId.get(deviceActor);

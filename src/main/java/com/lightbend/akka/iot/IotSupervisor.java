@@ -88,15 +88,15 @@ public class IotSupervisor extends AbstractActor {
                 managerIdToActor.keySet()), getSelf());
     }
 
-    public static final class RequestDeviceManagerList {
+    static final class RequestDeviceManagerList {
         final long requestId;
 
-        public RequestDeviceManagerList(long requestId) {
+        RequestDeviceManagerList(long requestId) {
             this.requestId = requestId;
         }
     }
 
-    public static final class ReplyDeviceManagerList {
+    static final class ReplyDeviceManagerList {
         final long requestId;
         final Set<String> ids;
 
@@ -106,31 +106,31 @@ public class IotSupervisor extends AbstractActor {
         }
     }
 
-    public static final class TrackDeviceManager {
+    static final class TrackDeviceManager {
         final long requestId;
         final String deviceManagerId;
 
-        public TrackDeviceManager(long requestId, String deviceManagerId) {
+        TrackDeviceManager(long requestId, String deviceManagerId) {
             this.requestId = requestId;
             this.deviceManagerId = deviceManagerId;
         }
     }
 
-    public static final class RequestDeviceManagerById {
+    static final class RequestDeviceManagerById {
         final long requestId;
         final String deviceManagerId;
 
-        public RequestDeviceManagerById(long requestId, String deviceManagerId) {
+        RequestDeviceManagerById(long requestId, String deviceManagerId) {
             this.requestId = requestId;
             this.deviceManagerId = deviceManagerId;
         }
     }
 
-    public static final class ResponseDeviceManagerById {
+    static final class ResponseDeviceManagerById {
         final long requestId;
         final ActorRef deviceManager;
 
-        public ResponseDeviceManagerById(long requestId, ActorRef deviceManager) {
+        ResponseDeviceManagerById(long requestId, ActorRef deviceManager) {
             this.requestId = requestId;
             this.deviceManager = deviceManager;
         }

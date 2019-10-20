@@ -39,7 +39,7 @@ public class IotDeviceManager extends AbstractActor {
         final long requestId;
         final Set<String> groupList;
 
-        public ReplyGroupList(long requestId, Set<String> groupList) {
+        ReplyGroupList(long requestId, Set<String> groupList) {
             this.requestId = requestId;
             this.groupList = groupList;
         }
@@ -55,21 +55,21 @@ public class IotDeviceManager extends AbstractActor {
         }
     }
 
-    public static final class RequestDeviceGroupById{
-        public final long requestId;
-        public final String deviceGroupId;
+    static final class RequestDeviceGroupById{
+        final long requestId;
+        final String deviceGroupId;
 
-        public RequestDeviceGroupById(long requestId, String deviceGroupId) {
+        RequestDeviceGroupById(long requestId, String deviceGroupId) {
             this.requestId = requestId;
             this.deviceGroupId = deviceGroupId;
         }
     }
 
-    public static final class RespondDeviceGroupById{
-        public final long requestId;
-        public final ActorRef deviceGroupActor;
+    static final class RespondDeviceGroupById{
+        final long requestId;
+        final ActorRef deviceGroupActor;
 
-        public RespondDeviceGroupById(long requestId, ActorRef deviceGroupActor) {
+        RespondDeviceGroupById(long requestId, ActorRef deviceGroupActor) {
             this.requestId = requestId;
             this.deviceGroupActor = deviceGroupActor;
         }
@@ -78,7 +78,7 @@ public class IotDeviceManager extends AbstractActor {
     public static final class DeviceRegistered {
     }
 
-    public interface DeviceGroupTemperatureReading{}
+    interface DeviceGroupTemperatureReading{}
 
     public enum DeviceGroupNotAvailable implements DeviceGroupTemperatureReading{
         INSTANCE
@@ -89,10 +89,10 @@ public class IotDeviceManager extends AbstractActor {
     }
 
     public static final class DeviceGroupTemperatures implements DeviceGroupTemperatureReading{
-        public final long requestId;
-        public final Map<String, IotDeviceGroup.TemperatureReading> groupTemperatureReading;
+        final long requestId;
+        final Map<String, IotDeviceGroup.TemperatureReading> groupTemperatureReading;
 
-        public DeviceGroupTemperatures(long requestId, Map<String, IotDeviceGroup.TemperatureReading> groupTemperatureReading) {
+        DeviceGroupTemperatures(long requestId, Map<String, IotDeviceGroup.TemperatureReading> groupTemperatureReading) {
             this.requestId = requestId;
             this.groupTemperatureReading = groupTemperatureReading;
         }
@@ -120,19 +120,19 @@ public class IotDeviceManager extends AbstractActor {
         }
     }
 
-    public static final class RequestAllGroupTemperatures{
+    static final class RequestAllGroupTemperatures{
         final long requestId;
 
-        public RequestAllGroupTemperatures(long requestId) {
+        RequestAllGroupTemperatures(long requestId) {
             this.requestId = requestId;
         }
     }
 
-    public static final class RespondAllGroupTemperatures{
+    static final class RespondAllGroupTemperatures{
         final long requestId;
         final Map<String, DeviceGroupTemperatureReading> groupTemperatures;
 
-        public RespondAllGroupTemperatures(long requestId, Map<String, DeviceGroupTemperatureReading> groupTemperatures) {
+        RespondAllGroupTemperatures(long requestId, Map<String, DeviceGroupTemperatureReading> groupTemperatures) {
             this.requestId = requestId;
             this.groupTemperatures = groupTemperatures;
         }

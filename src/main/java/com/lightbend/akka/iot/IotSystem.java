@@ -17,7 +17,8 @@ public class IotSystem {
     private final ActorSystem system;
     private ActorRef supervisor;
 
-    public static void main(String[] args) throws Exception {
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public static void main(String[] args) {
         IotSystem system = new IotSystem("iotSystem");
         try {
             // Do something meaningful....
@@ -95,7 +96,7 @@ public class IotSystem {
                     });
 
             IotDeviceGroup.RequestAllTemperatures requestAllTemperatures = new IotDeviceGroup.RequestAllTemperatures(9L);
-            IotDeviceGroup.RespondAllTemperatures respondAllTemperatures = (IotDeviceGroup.RespondAllTemperatures) Await.result(ask(deviceGroup,requestAllTemperatures, Timeout.create(Duration.ofSeconds(30))),
+            IotDeviceGroup.RespondAllTemperatures respondAllTemperatures = (IotDeviceGroup.RespondAllTemperatures) Await.result(ask(deviceGroup, requestAllTemperatures, Timeout.create(Duration.ofSeconds(30))),
                     Timeout.create(Duration.ofSeconds(30)).duration());
 
             System.out.println("RespondAllTemperatures for device group directly finished...");
